@@ -1,0 +1,11 @@
+[Unit]
+Description=Heading NMEA UDP Sender
+Requires=systemd-modules-load.service
+
+[Service]
+User=root
+ExecStart=/usr/local/bin/heading_nmea_udp_sender
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
