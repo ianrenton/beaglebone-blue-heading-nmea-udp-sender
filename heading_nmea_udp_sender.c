@@ -17,7 +17,7 @@
 // True North. Should take into account any device calibration offset plus local
 // magnetic declination.
 #define OFFSET 0.0
-// UDP send ports
+// UDP configuration
 #define UDP_SEND_SERVER "127.0.0.1"
 #define UDP_SEND_PORT_1 2021
 #define UDP_SEND_PORT_2 2022
@@ -26,7 +26,7 @@ static int running = 0;
 
 // interrupt handler to catch ctrl-c
 static void __signal_handler(__attribute__ ((unused)) int dummy) {
-    running=0;
+    running = 0;
     return;
 }
 
@@ -57,7 +57,7 @@ int main()  {
         server1.sin_port        = htons(UDP_SEND_PORT_1);
         server1.sin_addr.s_addr = inet_addr(UDP_SEND_SERVER);
     } else {
-        fprintf(stderr,"create socket_1 failed\n");
+        fprintf(stderr,"create socket 1 failed\n");
         return -1;
     }
     int socket2;
@@ -70,7 +70,6 @@ int main()  {
         fprintf(stderr,"create socket 2 failed\n");
         return -1;
     }
-
     printf("Sending heading data to local UDP ports %d and %d.\n", UDP_SEND_PORT_1, UDP_SEND_PORT_2);
 
     // Main run loop
@@ -94,7 +93,7 @@ int main()  {
             heading = heading - 360.0;
         }
 
-        // Build NMEA message
+        // Build NMEA message content
         char message[20], messageInner[14];
         sprintf(messageInner, "HEHDT,%03.1f,T", heading);
 
@@ -105,6 +104,7 @@ int main()  {
             crc ^= messageInner[i];
         }
 
+        // Assemble full message
         sprintf(message, "$%s*%02X\r\n", messageInner, crc);
 
         // Send packets
