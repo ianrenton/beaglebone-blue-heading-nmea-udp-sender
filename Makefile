@@ -40,11 +40,10 @@ install:
 	@$(MAKE) --no-print-directory
 	@$(INSTALLDIR) $(DESTDIR)$(prefix)/bin
 	@$(INSTALL) $(TARGET) $(DESTDIR)$(prefix)/bin
-	@systemctl stop $(TARGET).service
 	@cp $(TARGET).service $(servicedir)/
 	@systemctl daemon-reload
 	@systemctl enable $(TARGET).service
-	@systemctl start $(TARGET).service
+	@systemctl restart $(TARGET).service
 	@echo "$(TARGET) Install Complete"
 
 clean:
