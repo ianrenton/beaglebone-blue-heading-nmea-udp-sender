@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <signal.h>
 #include <math.h>
@@ -11,20 +12,32 @@
 #include <rc/mpu.h>
 #include <rc/time.h>
 
-// Bus for Robotics Cape and BeagleboneBlue is 2
-#define I2C_BUS 2
-// Offset added to magnetometer's heading to produce a heading with respect to
-// True North. Should take into account any device calibration offset plus local
-// magnetic declination.
-#define OFFSET 0.0
-// UDP configuration
+// The code treats the Beaglebone Blue's +X direction as the heading of the robot. If your
+// board is fitted in a different orientation, or is not exactly lined up, set the
+// HEADING_OFFSET value here. This value will be added (i.e. clockwise rotation) to the
+// magnetometer-based heading to give the result. So if +X points to the left of your robot,
+// this should be 90. If +X points to the right, -90. And if +X points backwards, 180.
+#define HEADING_OFFSET 90.0
+// If your board is mounted upside-down in your robot, the heading results will go the
+// wrong way (i.e. increase anticlockwise). Set BOARD_INVERTED to fix this.
+#define BOARD_INVERTED false
+// The magnetometer produces readings based on magnetic north, whereas the HDT message
+// produced by this code should contain a heading based on true north. Enter your local
+// magnetic declination here to apply this offset. Positive declination is when mag
+// north is east/clockwise of true north.
+#define LOCAL_MAGNETIC_DECLINATION 0.1
+// This code sends the heading data to two UDP ports, on the host and with port numbers
+// defined here.
 #define UDP_SEND_SERVER "127.0.0.1"
 #define UDP_SEND_PORT_1 2021
 #define UDP_SEND_PORT_2 2022
+// Set the I2C bus on which to communicate with the 9DOF MPU. For the Beaglebone Blue and
+// Beaglebone Black Robotics Cape, this is 2.
+#define I2C_BUS 2
 
-static int running = 0;
 
 // interrupt handler to catch ctrl-c
+static int running = 0;
 static void __signal_handler(__attribute__ ((unused)) int dummy) {
     running = 0;
     return;
@@ -79,17 +92,21 @@ int main()  {
         double xField = data.mag[0];
         double yField = data.mag[1];
 
-        // Translate to orientation of Beaglebone in the boat
-        double forwardField = -yField;
-        double stbdField = -xField;
+        // Calculate heading based on magnetometer reading
+        double heading = -atan2(-yField, xField)*(180/M_PI);
 
-        // Calculate heading
-        double heading = atan2(-stbdField, forwardField)*(180/M_PI);
-        heading = heading + OFFSET;
-        if (heading < 0.0) {
+        // Apply offsets and investions
+        if (BOARD_INVERTED) {
+            heading = -heading;
+        }
+        heading = heading + HEADING_OFFSET;
+        heading = heading + LOCAL_MAGNETIC_DECLINATION;
+
+        // Ensure we get a number in the range 0.0<=x<360.0
+        while (heading < 0.0) {
             heading = heading + 360.0;
         }
-        if (heading > 360.0) {
+        while (heading >= 360.0) {
             heading = heading - 360.0;
         }
 
