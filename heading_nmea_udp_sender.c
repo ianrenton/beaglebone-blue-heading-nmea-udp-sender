@@ -1,3 +1,16 @@
+// Beaglebone Blue Heading NMEA UDP Sender
+// by Ian Renton, March 2023
+// https://github.com/ianrenton/beaglebone-blue-heading-nmea-udp-sender
+// Based on the MPU example from the Beaglebone Robot Control Library.
+//
+// Reads data from a Beaglebone Blue magnetometer, formats it as an NMEA-0183
+// HDT message, and sends it via UDP. Maybe useful for robotics software that
+// expects that format of heading data.
+//
+// If using this for yourself, you may need to customise the #define values
+// near the top of the file to reflect the orientation of your board in your
+// robot.
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
