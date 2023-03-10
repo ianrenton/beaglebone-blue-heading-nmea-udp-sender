@@ -54,5 +54,8 @@ clean:
 
 uninstall:
 	@$(RM) $(DESTDIR)$(prefix)/bin/$(TARGET)
+	@systemctl stop $(TARGET).service
+	@systemctl disable $(TARGET).service
+	@rm $(servicedir)/$(TARGET).service
 	@echo "$(TARGET) Uninstall Complete"
 
