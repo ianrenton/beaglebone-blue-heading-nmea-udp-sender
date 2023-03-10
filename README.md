@@ -1,5 +1,5 @@
 # Beaglebone Blue Heading NMEA UDP Sender
-Reads data from a Beaglebone Blue magnetometer, formats it as an NMEA-0183 HDT message, and sends it via UDP. Maybe useful for robotics software that expects that format of heading data.
+Reads data from a Beaglebone Blue magnetometer, formats it as an NMEA-0183 HDT message, and sends it via UDP to two ports. Maybe useful for robotics software that expects that format of heading data.
 
 Apologies for code quality, it's been a while since I last wrote any C.
 
