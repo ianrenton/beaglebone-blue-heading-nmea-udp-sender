@@ -5,7 +5,8 @@
 //
 // Reads data from a Beaglebone Blue magnetometer, formats it as an NMEA-0183
 // HDT message, and sends it via UDP. Maybe useful for robotics software that
-// expects that format of heading data.
+// expects that format of heading data. This can also be ingested into `gpsd`,
+// by e.g. adding `udp://0.0.0.0:2021` to its list of sources.
 //
 // If using this for yourself, you may need to customise the #define values
 // near the top of the file to reflect the orientation of your board in your
@@ -39,11 +40,9 @@
 // magnetic declination here to apply this offset. Positive declination is when mag
 // north is east/clockwise of true north.
 #define LOCAL_MAGNETIC_DECLINATION 0.1
-// This code sends the heading data to two UDP ports, on the host and with port numbers
-// defined here.
+// This code sends the heading data to the host and port specified here.
 #define UDP_SEND_SERVER "127.0.0.1"
-#define UDP_SEND_PORT_1 2021
-#define UDP_SEND_PORT_2 2022
+#define UDP_SEND_PORT 2021
 // Set the I2C bus on which to communicate with the 9DOF MPU. For the Beaglebone Blue and
 // Beaglebone Black Robotics Cape, this is 2.
 #define I2C_BUS 2
@@ -76,27 +75,16 @@ int main()  {
     }
 
     // Create UDP sockets, exit on failure
-    int socket1;
-    struct sockaddr_in server1;
-    if ((socket1 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) >= 0) {
-        server1.sin_family      = AF_INET;
-        server1.sin_port        = htons(UDP_SEND_PORT_1);
-        server1.sin_addr.s_addr = inet_addr(UDP_SEND_SERVER);
+    int udpsocket;
+    struct sockaddr_in server;
+    if ((udpsocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) >= 0) {
+        server.sin_family      = AF_INET;
+        server.sin_port        = htons(UDP_SEND_PORT);
+        server.sin_addr.s_addr = inet_addr(UDP_SEND_SERVER);
     } else {
-        fprintf(stderr,"create socket 1 failed\n");
+        fprintf(stderr,"create socket failed\n");
         return -1;
     }
-    int socket2;
-    struct sockaddr_in server2;
-    if ((socket2 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) >= 0) {
-        server2.sin_family      = AF_INET;
-        server2.sin_port        = htons(UDP_SEND_PORT_2);
-        server2.sin_addr.s_addr = inet_addr(UDP_SEND_SERVER);
-    } else {
-        fprintf(stderr,"create socket 2 failed\n");
-        return -1;
-    }
-    printf("Sending heading data to local UDP ports %d and %d.\n", UDP_SEND_PORT_1, UDP_SEND_PORT_2);
 
     // Main run loop
     while (running) {
@@ -125,7 +113,7 @@ int main()  {
 
         // Build NMEA message content
         char message[20], messageInner[14];
-        sprintf(messageInner, "HEHDT,%03.1f,T", heading);
+        sprintf(messageInner, "GPHDT,%03.1f,T", heading);
 
         // Calculate checksum
         int crc = 0;
@@ -137,9 +125,8 @@ int main()  {
         // Assemble full message
         sprintf(message, "$%s*%02X\r\n", messageInner, crc);
 
-        // Send packets
-        sendto(socket1, message, (strlen(message)+1), 0, (struct sockaddr *)&server1, sizeof(server1));
-        sendto(socket2, message, (strlen(message)+1), 0, (struct sockaddr *)&server2, sizeof(server2));
+        // Send packet
+        sendto(udpsocket, message, (strlen(message)+1), 0, (struct sockaddr *)&server, sizeof(server));
 
         // 100ms delay until next time
         rc_usleep(100000);
@@ -147,7 +134,6 @@ int main()  {
 
     // Disable MPU & close sockets
     rc_mpu_power_off();
-    close(socket1);
-    close(socket2);
+    close(udpsocket);
     return 0;
 }
