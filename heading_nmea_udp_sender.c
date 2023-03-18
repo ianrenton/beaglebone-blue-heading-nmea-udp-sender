@@ -69,8 +69,9 @@ static void __signal_handler(__attribute__ ((unused)) int dummy) {
 // Handle data function. Called back at a predefined interval by the MPU
 // when it has new data.
 static void __handle_data(void) {
-    // Calculate heading based on TaitBryan yaw reading
-    double heading = -data.fused_TaitBryan[TB_YAW_Z] * RAD_TO_DEG;
+    // Get a heading value based on filtered compass heading reported by MPU
+    // Requires inversion so that clockwise is positive
+    double heading = -data.compass_heading * RAD_TO_DEG;
 
     // Apply offsets
     heading = heading + HEADING_OFFSET;
